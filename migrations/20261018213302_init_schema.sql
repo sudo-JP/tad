@@ -1,11 +1,6 @@
 -- +goose Up
-SELECT 'up SQL query';
-
--- +goose Down
-SELECT 'down SQL query';
-
 CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY ,
+    user_id TEXT PRIMARY KEY,
     username TEXT NOT NULL
 );
 
@@ -14,19 +9,30 @@ CREATE TABLE IF NOT EXISTS sudo_users (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE IF NOT EXISTS actions (
-    action TEXT PRIMARY KEY,
-    payload TEXT
+CREATE TABLE IF NOT EXISTS commands (
+    command TEXT PRIMARY KEY,
+    behavior TEXT NOT NULL CHECK (behavior IN ('spam', 'media')),
+    payload TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS banned_words (
     word TEXT PRIMARY KEY,
-    action TEXT NOT NULL,
-    FOREIGN KEY (action) REFERENCES actions(action)
+    command TEXT NOT NULL,
+    FOREIGN KEY (command) REFERENCES commands(command)
 );
 
-CREATE TABLE IF NOT EXISTS commands (
-    command TEXT PRIMARY KEY,
-    action TEXT NOT NULL,
-    FOREIGN KEY (action) REFERENCES actions(action)
+CREATE TABLE IF NOT EXISTS leetcode_owed (
+    user_id TEXT NOT NULL,
+    command TEXT NOT NULL,
+    owed_count INTEGER NOT NULL CHECK (owed_count >= 0),
+    PRIMARY KEY (user_id, command),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (command) REFERENCES commands(command)
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS banned_words;
+DROP TABLE IF EXISTS leetcode_owed;
+DROP TABLE IF EXISTS commands;
+DROP TABLE IF EXISTS sudo_users;
+DROP TABLE IF EXISTS users;
