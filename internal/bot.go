@@ -16,11 +16,14 @@ func NewBot(config *Env, database *db.TadDatabase) (*Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	session.AddHandler(handlers.HandleMessage)
-
-	return &Bot{
+	bot := Bot{
 		session: session,
 		database: database,
-	}, nil
+	}
+	session.AddHandler(bot.handleMessage)
+	return &bot, nil
+}
+
+func (b *Bot) handleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+    handlers.HandleMessage(s, m, b.database)
 }

@@ -11,17 +11,14 @@ func (db *TadDatabase) CreateBannedWord(ctx context.Context, word, command strin
 func (db *TadDatabase) GetBannedWord(ctx context.Context, word string) (BannedWord, error) {
 	var result BannedWord
 	err := db.pool.QueryRowContext(ctx, `
-		SELECT b.word, b.command, c.behavior, c.payload
-		FROM banned_words b JOIN commands c ON c.command = b.command
-		WHERE b.word = ?`, word).
-		Scan(&result.Word, &result.Command, &result.Behavior, &result.Payload)
+		SELECT word, command FROM banned_words WHERE word = ?`, word).
+		Scan(&result.Word, &result.Command)
 	return result, err
 }
 
 func (db *TadDatabase) GetBannedWordsRecords(ctx context.Context) ([]BannedWord, error) {
 	rows, err := db.pool.QueryContext(ctx, `
-		SELECT b.word, b.command, c.behavior, c.payload
-		FROM banned_words b JOIN commands c ON c.command = b.command`)
+		SELECT word, command FROM banned_words`)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +27,7 @@ func (db *TadDatabase) GetBannedWordsRecords(ctx context.Context) ([]BannedWord,
 	var words []BannedWord
 	for rows.Next() {
 		var word BannedWord
-		if err := rows.Scan(&word.Word, &word.Command, &word.Behavior, &word.Payload); err != nil {
+		if err := rows.Scan(&word.Word, &word.Command); err != nil {
 			return nil, err
 		}
 		words = append(words, word)

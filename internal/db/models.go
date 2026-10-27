@@ -11,15 +11,32 @@ type SudoUser struct {
 
 type Command struct {
 	Command  string
-	Behavior string
-	Payload  string
+	Behavior CommandBehavior
+	Spam     *SpamCommand
+	Media    *MediaCommand
+}
+
+type CommandBehavior string
+
+const (
+	BehaviorSpam  CommandBehavior = "spam"
+	BehaviorMedia CommandBehavior = "media"
+)
+
+type SpamCommand struct {
+	Command   string
+	Payload   string
+	SpamCount *int
+}
+
+type MediaCommand struct {
+	Command string
+	Payload string
 }
 
 type BannedWord struct {
-	Word     string
-	Command  string
-	Behavior string
-	Payload  string
+	Word    string
+	Command string
 }
 
 type LeetcodeOwed struct {
