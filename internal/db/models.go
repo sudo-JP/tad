@@ -34,13 +34,7 @@ type MediaCommand struct {
 	Payload string
 }
 
-type BannedWord struct {
-	Word    string
-	Command string
-}
-
 type LeetcodeOwed struct {
 	UserID    string
-	Command   string
 	OwedCount int
 }

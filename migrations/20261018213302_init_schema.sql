@@ -28,18 +28,13 @@ CREATE TABLE IF NOT EXISTS media_commands (
 );
 
 CREATE TABLE IF NOT EXISTS banned_words (
-    word TEXT PRIMARY KEY,
-    command TEXT NOT NULL,
-    FOREIGN KEY (command) REFERENCES commands(command)
+    word TEXT PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS leetcode_owed (
-    user_id TEXT NOT NULL,
-    command TEXT NOT NULL,
+    user_id TEXT PRIMARY KEY,
     owed_count INTEGER NOT NULL CHECK (owed_count >= 0),
-    PRIMARY KEY (user_id, command),
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (command) REFERENCES commands(command)
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- +goose Down

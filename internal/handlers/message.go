@@ -10,7 +10,7 @@ import (
 )
 
 func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadDatabase) {
-	if m.Author.ID == s.State.User.ID {
+	if m.Author.Bot {
 		return
 	}
 
@@ -18,15 +18,20 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadD
 	defer cancel()
 
 	const prefix = "$"
-	if checkBannedWord(s, m, db, ctx) {
+	var args []string
+	if strings.HasPrefix(m.Content, prefix) {
+		args = strings.Fields(strings.TrimPrefix(m.Content, prefix))
+	}
+
+	// Sudo runs before the banned word check so "$sudo unban <word>" doesn't charge the sender.
+	if len(args) > 0 && args[0] == "sudo" {
+		handleSudo(ctx, s, m, db, args[1:])
 		return
 	}
 
-	if !strings.HasPrefix(m.Content, prefix) {
+	if checkBannedWord(ctx, s, m, db) {
 		return
 	}
-	content := strings.TrimPrefix(m.Content, prefix)
-	args := strings.Fields(content)
 
 	handleArgs(s, m, db, args, ctx)
 }

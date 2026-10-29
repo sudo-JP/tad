@@ -1,6 +1,10 @@
 package db
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"errors"
+)
 
 func (db *TadDatabase) CreateUser(ctx context.Context, userID, username string) error {
 	_, err := db.pool.ExecContext(ctx, "INSERT INTO users (user_id, username) VALUES (?, ?)", userID, username)
@@ -61,11 +65,14 @@ func (db *TadDatabase) CreateSudoUser(ctx context.Context, userID, username stri
 	}
 	defer tx.Rollback()
 
-	if _, err = tx.ExecContext(ctx, "INSERT INTO users (user_id, username) VALUES (?, ?)", userID, username); err != nil {
+	if _, err = tx.ExecContext(ctx, `
+		INSERT INTO users (user_id, username) VALUES (?, ?)
+		ON CONFLICT(user_id) DO UPDATE SET username = excluded.username`,
+		userID, username); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, "INSERT INTO sudo_users (user_id) VALUES (?)", userID); err != nil {
-		return err
+		return translateErr(err)
 	}
 	return tx.Commit()
 }
@@ -74,6 +81,16 @@ func (db *TadDatabase) GetSudoUser(ctx context.Context, userID string) (SudoUser
 	var user SudoUser
 	err := db.pool.QueryRowContext(ctx, "SELECT user_id FROM sudo_users WHERE user_id = ?", userID).Scan(&user.UserID)
 	return user, err
+}
+
+func (db *TadDatabase) IsSudo(ctx context.Context, userID string) (bool, error) {
+	var id string
+	err := db.pool.QueryRowContext(ctx,
+		"SELECT user_id FROM sudo_users WHERE user_id = ?", userID).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (db *TadDatabase) GetSudoUsers(ctx context.Context) ([]SudoUser, error) {
@@ -95,6 +112,6 @@ func (db *TadDatabase) GetSudoUsers(ctx context.Context) ([]SudoUser, error) {
 }
 
 func (db *TadDatabase) DeleteSudoUser(ctx context.Context, userID string) error {
-	_, err := db.pool.ExecContext(ctx, "DELETE FROM sudo_users WHERE user_id = ?", userID)
-	return err
+	return requireAffected(db.pool.ExecContext(ctx, "DELETE FROM sudo_users WHERE user_id = ?", userID))
 }
+

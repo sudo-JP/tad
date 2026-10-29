@@ -60,7 +60,6 @@ func (db *TadDatabase) GetWatchlist(ctx context.Context) ([]User, error) {
 }
 
 func (db *TadDatabase) RemoveFromWatchlist(ctx context.Context, userID string) error {
-	_, err := db.pool.ExecContext(ctx,
-		"DELETE FROM banned_word_watchlist WHERE user_id = ?", userID)
-	return err
+	return requireAffected(db.pool.ExecContext(ctx,
+		"DELETE FROM banned_word_watchlist WHERE user_id = ?", userID))
 }

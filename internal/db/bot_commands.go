@@ -26,7 +26,7 @@ func (db *TadDatabase) CreateSpamCommand(ctx context.Context, command, payload s
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(ctx, "INSERT INTO commands (command, behavior) VALUES (?, ?)", command, BehaviorSpam); err != nil {
-		return err
+		return translateErr(err)
 	}
 	if _, err = tx.ExecContext(ctx, "INSERT INTO spam_commands (command, payload, spam_count) VALUES (?, ?, ?)", command, payload, spamCount); err != nil {
 		return err
@@ -41,7 +41,7 @@ func (db *TadDatabase) CreateMediaCommand(ctx context.Context, command, payload 
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(ctx, "INSERT INTO commands (command, behavior) VALUES (?, ?)", command, BehaviorMedia); err != nil {
-		return err
+		return translateErr(err)
 	}
 	if _, err = tx.ExecContext(ctx, "INSERT INTO media_commands (command, payload) VALUES (?, ?)", command, payload); err != nil {
 		return err
@@ -117,6 +117,5 @@ func (db *TadDatabase) UpdateMediaCommand(ctx context.Context, command, payload 
 }
 
 func (db *TadDatabase) DeleteCommand(ctx context.Context, command string) error {
-	_, err := db.pool.ExecContext(ctx, "DELETE FROM commands WHERE command = ?", command)
-	return err
+	return requireAffected(db.pool.ExecContext(ctx, "DELETE FROM commands WHERE command = ?", command))
 }
