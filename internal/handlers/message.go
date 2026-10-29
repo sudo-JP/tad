@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sudo-JP/tad/internal/db"
@@ -13,7 +14,13 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadD
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
 	const prefix = "$"
+	if checkBannedWord(s, m, db, ctx) {
+		return
+	}
 
 	if !strings.HasPrefix(m.Content, prefix) {
 		return
@@ -21,14 +28,14 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadD
 	content := strings.TrimPrefix(m.Content, prefix)
 	args := strings.Fields(content)
 
-	handleArgs(s, m, db, args)
+	handleArgs(s, m, db, args, ctx)
 }
 
-func handleArgs(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadDatabase, args []string) {
+func handleArgs(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadDatabase, args []string, ctx context.Context) {
 	if len(args) == 0 {
 		return
 	}
-	commands, err := db.GetCommands(context.Background())
+	commands, err := db.GetCommands(ctx)
 	if err != nil {
 		return
 	}
