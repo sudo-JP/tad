@@ -18,8 +18,8 @@ const sudoUsage = "```\n" +
 	"$sudo ban|unban <word>\n" +
 	"$sudo watch|unwatch @user\n" +
 	"$sudo add|remove @user\n" +
-	"$sudo media <name> <url>\n" +
-	"$sudo spam <name> <count> <text...>\n" +
+	"$sudo new media <name> <url>\n" +
+	"$sudo new spam <name> <count> <text...>\n" +
 	"$sudo rm <name>\n" +
 	"$sudo forgive @user <n>\n" +
 	"```"
@@ -93,6 +93,39 @@ func runSudo(ctx context.Context, m *discordgo.MessageCreate, database *db.TadDa
 			return user.Mention() + " is no longer sudo", database.DeleteSudoUser(ctx, user.ID)
 		}
 
+	case "new":
+		if len(args) == 0 {
+			return "", errUsage
+		}
+		return runSudoNew(ctx, database, args[0], args[1:])
+
+	case "rm":
+		if len(args) != 1 {
+			return "", errUsage
+		}
+		return "removed `" + args[0] + "`", database.DeleteCommand(ctx, args[0])
+
+	case "forgive":
+		if len(args) != 2 {
+			return "", errUsage
+		}
+		user, err := mentionedUser(m)
+		if err != nil {
+			return "", err
+		}
+		n, err := strconv.Atoi(args[1])
+		if err != nil || n <= 0 {
+			return "", sudoError("amount must be a positive number")
+		}
+		return fmt.Sprintf("forgave %d leetcode for %s", n, user.Mention()),
+			database.DecrementLeetcodeOwed(ctx, user.ID, n)
+	}
+
+	return "", errUsage
+}
+
+func runSudoNew(ctx context.Context, database *db.TadDatabase, kind string, args []string) (string, error) {
+	switch kind {
 	case "media":
 		if len(args) != 2 {
 			return "", errUsage
@@ -115,27 +148,6 @@ func runSudo(ctx context.Context, m *discordgo.MessageCreate, database *db.TadDa
 		}
 		payload := strings.Join(args[2:], " ")
 		return "added spam command `" + args[0] + "`", database.CreateSpamCommand(ctx, args[0], payload, &count)
-
-	case "rm":
-		if len(args) != 1 {
-			return "", errUsage
-		}
-		return "removed `" + args[0] + "`", database.DeleteCommand(ctx, args[0])
-
-	case "forgive":
-		if len(args) != 2 {
-			return "", errUsage
-		}
-		user, err := mentionedUser(m)
-		if err != nil {
-			return "", err
-		}
-		n, err := strconv.Atoi(args[1])
-		if err != nil || n <= 0 {
-			return "", sudoError("amount must be a positive number")
-		}
-		return fmt.Sprintf("forgave %d leetcode for %s", n, user.Mention()),
-			database.DecrementLeetcodeOwed(ctx, user.ID, n)
 	}
 
 	return "", errUsage
