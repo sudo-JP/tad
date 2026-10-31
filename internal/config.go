@@ -9,6 +9,7 @@ import (
 type Env struct {
 	DatabaseURL string
 	BotToken	string
+	OwnerID		string
 }
 
 func NewEnv() (*Env, error) {
@@ -19,10 +20,12 @@ func NewEnv() (*Env, error) {
 
 	dbURL := os.Getenv("DATABASE_URL")
 	botToken := os.Getenv("BOT_TOKEN")
+	ownerID := os.Getenv("OWNER_ID")
 
 	env := Env{
 		DatabaseURL: dbURL,
 		BotToken: botToken,
+		OwnerID: ownerID,
 	}
 
 	return &env, nil

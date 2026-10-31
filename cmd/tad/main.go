@@ -1,35 +1,51 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/sudo-JP/tad/internal"
 	"github.com/sudo-JP/tad/internal/db"
 )
 
-func main()  {
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	env, err := internal.NewEnv()
 	if err != nil {
-		log.Fatal("Error loading .env")
+		log.Fatalf("load env: %v", err)
+	}
+	if env.OwnerID == "" {
+		log.Fatal("OWNER_ID is not set")
 	}
 
-	db, err := db.NewTadDB(env.DatabaseURL)
+	database, err := db.NewTadDB(env.DatabaseURL)
 	if err != nil {
-		log.Fatal("Error create DB")
+		log.Fatalf("open DB: %v", err)
 	}
+	defer database.Close()
 
-	bot, err := internal.NewBot(env, db)
+	seedCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	err = database.Seed(seedCtx, env.OwnerID)
+	cancel()
 	if err != nil {
-		log.Fatal("Error create bot")
+		log.Fatalf("seed: %v", err)
 	}
 
+	bot, err := internal.NewBot(ctx, env, database)
+	if err != nil {
+		log.Fatalf("create bot: %v", err)
+	}
 	if err := bot.Run(); err != nil {
-		log.Fatal("Error running bot")
+		log.Fatalf("run bot: %v", err)
 	}
+	defer bot.Close()
 
-	if err := bot.CloseOnTermination(); err != nil {
-		log.Fatal("Error closing bot")
-	}
+	log.Println("bot running, Ctrl+C to stop")
+	<-ctx.Done()
 }
-
-
