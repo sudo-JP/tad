@@ -20,6 +20,8 @@ func NewBot(ctx context.Context, config *Env, database *db.TadDatabase) (*Bot, e
 	if err != nil {
 		return nil, err
 	}
+	session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
+
 	bot := Bot{
 		ctx:     ctx,
 		session: session,

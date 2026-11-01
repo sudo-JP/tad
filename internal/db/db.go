@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -17,7 +18,12 @@ type TadDatabase struct {
 }
 
 func NewTadDB(dataSourceName string) (*TadDatabase, error) {
-	pool, err := sql.Open("sqlite3", dataSourceName)
+	// SQLite ignores foreign keys unless enabled on each connection.
+	sep := "?"
+	if strings.Contains(dataSourceName, "?") {
+		sep = "&"
+	}
+	pool, err := sql.Open("sqlite3", dataSourceName+sep+"_foreign_keys=on")
 	if err != nil {
 		return nil, err
 	}

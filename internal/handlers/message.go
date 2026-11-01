@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -24,33 +27,34 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 	}
 
 	// Sudo runs before the banned word check so "$sudo unban <word>" doesn't charge the sender.
-	if len(args) > 0 && args[0] == "sudo" {
+	switch args[0] {
+	case "sudo": 
 		handleSudo(ctx, s, m, db, args[1:])
-		return
+	case "owed":
+		handleOwedLeetcode()
+	case "leetcode":
+		handleFetchRandomLeetcode()
+	default:
+		if checkBannedWord(ctx, s, m, db) {
+			return
+		}
+		handleArgs(s, m, db, args, ctx)
 	}
-
-	if checkBannedWord(ctx, s, m, db) {
-		return
-	}
-
-	handleArgs(s, m, db, args, ctx)
 }
 
 func handleArgs(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadDatabase, args []string, ctx context.Context) {
 	if len(args) == 0 {
 		return
 	}
-	commands, err := db.GetCommands(ctx)
-	if err != nil {
+	command, err := db.GetCommand(ctx, args[0])
+	if errors.Is(err, sql.ErrNoRows) {
 		return
 	}
-
-	for _, command := range commands {
-		if handleCommand(s, m, args, &command) {
-			break
-		}
+	if err != nil {
+		log.Printf("get command %q: %v", args[0], err)
+		return
 	}
-
+	handleCommand(s, m, args, &command)
 }
 
 func handleCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string, command *db.Command) bool {
