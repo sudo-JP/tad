@@ -29,8 +29,6 @@ func handleOwedLeetcode(ctx context.Context, s *discordgo.Session, m *discordgo.
 		return
 	}
 	reply(s, m, fmt.Sprintf("%s owes %d leetcode", user.Username, owed.OwedCount))
-	
-	return
 }
 
 func handleFetchRandomLeetcode(ctx context.Context, s *discordgo.Session, m *discordgo.MessageCreate, database *db.TadDatabase, args []string) {

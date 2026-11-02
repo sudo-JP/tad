@@ -25,15 +25,18 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 	if strings.HasPrefix(m.Content, prefix) {
 		args = strings.Fields(strings.TrimPrefix(m.Content, prefix))
 	}
+	if len(args) == 0 {
+		return
+	}
 
 	// Sudo runs before the banned word check so "$sudo unban <word>" doesn't charge the sender.
 	switch args[0] {
 	case "sudo": 
 		handleSudo(ctx, s, m, db, args[1:])
 	case "owed":
-		handleOwedLeetcode()
+		handleOwedLeetcode(ctx, s, m, db, args[1:])
 	case "leetcode":
-		handleFetchRandomLeetcode()
+		handleFetchRandomLeetcode(ctx, s, m, db, args[1:])
 	default:
 		if checkBannedWord(ctx, s, m, db) {
 			return
@@ -68,17 +71,22 @@ func handleCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []stri
 			_, _ = s.ChannelMessageSend(m.ChannelID, command.Media.Payload)
 		}
 	case db.BehaviorSpam:
-		if command.Spam == nil {
-			return true
-		}
-		count := 1
-		if command.Spam.SpamCount != nil {
-			count = *command.Spam.SpamCount
-		}
-		for range count {
-			_, _ = s.ChannelMessageSend(m.ChannelID, command.Spam.Payload)
-		}
+		handleSpam(s, m, args, command)
 	}
 
 	return true
+}
+
+func handleSpam(s *discordgo.Session, m *discordgo.MessageCreate, args []string, command *db.Command) {
+	if command.Spam == nil {
+		return
+	}
+	count := 0
+	if command.Spam.SpamCount != nil {
+		count = *command.Spam.SpamCount
+	}
+	text := strings.ReplaceAll(command.Spam.Payload, "{args}", strings.Join(args[1:], " "))
+	for range count {
+		_, _ = s.ChannelMessageSend(m.ChannelID, text)
+	}
 }

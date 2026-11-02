@@ -1,0 +1,12 @@
+services:
+  tad:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/tad.db
+    volumes:
+      - tad-data:/app/data
+
+volumes:
+  tad-data:

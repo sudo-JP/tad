@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -13,8 +15,8 @@ type Env struct {
 }
 
 func NewEnv() (*Env, error) {
-	err := godotenv.Load()
-	if err != nil {
+	// .env is optional; in Docker the variables come from compose instead.
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 
