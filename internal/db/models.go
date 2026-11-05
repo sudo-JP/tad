@@ -38,3 +38,17 @@ type LeetcodeOwed struct {
 	UserID    string
 	OwedCount int
 }
+
+// LeetcodeProblemList is the "questionList" result from LeetCode's GraphQL API.
+type LeetcodeProblemList struct {
+	Total     int               `json:"total"`
+	Questions []LeetcodeProblem `json:"questions"`
+}
+
+type LeetcodeProblem struct {
+	Number     string `json:"frontendQuestionId"`
+	Title      string `json:"title"`
+	Slug       string `json:"titleSlug"`
+	Difficulty string `json:"difficulty"` // "Easy", "Medium" or "Hard"
+	PaidOnly   bool   `json:"isPaidOnly"`
+}
