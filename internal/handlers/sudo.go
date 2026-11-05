@@ -25,7 +25,7 @@ const sudoUsage = "```\n" +
 	"```"
 
 // reservedCommands are built-in names that DB commands must not shadow.
-var reservedCommands = map[string]struct{}{"sudo": {}}
+var reservedCommands = map[string]struct{}{"sudo": {}, "help": {}, "owed": {}, "leetcode": {}}
 
 // sudoError is a message meant to be shown to the user as-is.
 type sudoError string

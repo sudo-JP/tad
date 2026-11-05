@@ -22,15 +22,22 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 
 	const prefix = "$"
 	var args []string
-	if strings.HasPrefix(m.Content, prefix) {
-		args = strings.Fields(strings.TrimPrefix(m.Content, prefix))
+	if after, found := strings.CutPrefix(m.Content, prefix); found {
+		args = strings.Fields(after)
+	}
+
+	// Sudo skips the banned word check so "$sudo unban <word>" doesn't charge the sender.
+	isSudo := len(args) > 0 && args[0] == "sudo"
+	if !isSudo && checkBannedWord(ctx, s, m, db) {
+		return
 	}
 	if len(args) == 0 {
 		return
 	}
 
-	// Sudo runs before the banned word check so "$sudo unban <word>" doesn't charge the sender.
 	switch args[0] {
+	case "help":
+		handleHelp(ctx, s, m, db)
 	case "sudo": 
 		handleSudo(ctx, s, m, db, args[1:])
 	case "owed":
@@ -38,9 +45,6 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 	case "leetcode":
 		handleFetchRandomLeetcode(ctx, s, m, db, args[1:])
 	default:
-		if checkBannedWord(ctx, s, m, db) {
-			return
-		}
 		handleArgs(s, m, db, args, ctx)
 	}
 }
