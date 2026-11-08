@@ -82,17 +82,3 @@ func handleCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []stri
 
 	return true
 }
-
-func handleSpam(s *discordgo.Session, m *discordgo.MessageCreate, args []string, command *db.Command) {
-	if command.Spam == nil {
-		return
-	}
-	count := 0
-	if command.Spam.SpamCount != nil {
-		count = *command.Spam.SpamCount
-	}
-	text := strings.ReplaceAll(command.Spam.Payload, "{args}", strings.Join(args[1:], " "))
-	for range count {
-		_, _ = s.ChannelMessageSend(m.ChannelID, text)
-	}
-}

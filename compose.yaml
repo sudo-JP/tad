@@ -1,12 +1,39 @@
 services:
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ollama-init:
+    image: ollama/ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull deepseek-r1:1.5b"]
+    restart: "no"
+
   tad:
     build: .
     restart: unless-stopped
     env_file: .env
     environment:
       DATABASE_URL: /app/data/tad.db
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
     volumes:
       - tad-data:/app/data
 
 volumes:
   tad-data:
+  ollama-data:
