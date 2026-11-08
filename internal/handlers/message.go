@@ -36,6 +36,8 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 	}
 
 	switch args[0] {
+	case m.Author.ID:
+		handleOllamaMessage(ctx, s, m, args[1:])
 	case "help":
 		handleHelp(ctx, s, m, db)
 	case "sudo": 
