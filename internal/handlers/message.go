@@ -17,7 +17,7 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(parent, 5 * time.Second)
+	ctx, cancel := context.WithTimeout(parent, 60*time.Second)
 	defer cancel()
 
 	const prefix = "$"
@@ -26,21 +26,25 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 		args = strings.Fields(after)
 	}
 
+	if args, mentioned := botPrompt(s, m.Content); mentioned {
+		handleOllamaMessage(ctx, s, m, args)
+		return
+	}
+
 	// Sudo skips the banned word check so "$sudo unban <word>" doesn't charge the sender.
 	isSudo := len(args) > 0 && args[0] == "sudo"
 	if !isSudo && checkBannedWord(ctx, s, m, db) {
 		return
 	}
+
 	if len(args) == 0 {
 		return
 	}
 
 	switch args[0] {
-	case m.Author.ID:
-		handleOllamaMessage(ctx, s, m, args[1:])
 	case "help":
 		handleHelp(ctx, s, m, db)
-	case "sudo": 
+	case "sudo":
 		handleSudo(ctx, s, m, db, args[1:])
 	case "owed":
 		handleOwedLeetcode(ctx, s, m, db, args[1:])
@@ -49,6 +53,21 @@ func HandleMessage(parent context.Context, s *discordgo.Session, m *discordgo.Me
 	default:
 		handleArgs(s, m, db, args, ctx)
 	}
+}
+
+func botPrompt(s *discordgo.Session, content string) ([]string, bool) {
+	if s.State.User == nil {
+		return nil, false
+	}
+	for _, mention := range []string{
+		"<@" + s.State.User.ID + ">",
+		"<@!" + s.State.User.ID + ">",
+	} {
+		if after, mentioned := strings.CutPrefix(content, mention); mentioned {
+			return strings.Fields(after), true
+		}
+	}
+	return nil, false
 }
 
 func handleArgs(s *discordgo.Session, m *discordgo.MessageCreate, db *db.TadDatabase, args []string, ctx context.Context) {

@@ -80,20 +80,61 @@ func (db *TadDatabase) GetCommand(ctx context.Context, command string) (Command,
 }
 
 func (db *TadDatabase) GetCommands(ctx context.Context) ([]Command, error) {
-	rows, err := db.pool.QueryContext(ctx, "SELECT command FROM commands")
+	rows, err := db.pool.QueryContext(ctx, `
+		SELECT c.command, c.behavior,
+			sc.payload, sc.spam_count,
+			mc.payload
+		FROM commands c
+		LEFT JOIN spam_commands sc ON sc.command = c.command
+		LEFT JOIN media_commands mc ON mc.command = c.command`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var commands []Command
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var (
+			commandName  string
+			behavior     string
+			spamPayload  sql.NullString
+			spamCount    sql.NullInt64
+			mediaPayload sql.NullString
+		)
+		if err := rows.Scan(
+			&commandName,
+			&behavior,
+			&spamPayload,
+			&spamCount,
+			&mediaPayload,
+		); err != nil {
 			return nil, err
 		}
-		command, err := db.GetCommand(ctx, name)
-		if err != nil {
-			return nil, err
+
+		command := Command{
+			Command:  commandName,
+			Behavior: CommandBehavior(behavior),
+		}
+		switch command.Behavior {
+		case BehaviorSpam:
+			spam := &SpamCommand{
+				Command: commandName,
+			}
+			if spamPayload.Valid {
+				spam.Payload = spamPayload.String
+			}
+			if spamCount.Valid {
+				count := int(spamCount.Int64)
+				spam.SpamCount = &count
+			}
+			command.Spam = spam
+		case BehaviorMedia:
+			command.Media = &MediaCommand{
+				Command: commandName,
+			}
+			if mediaPayload.Valid {
+				command.Media.Payload = mediaPayload.String
+			}
 		}
 		commands = append(commands, command)
 	}

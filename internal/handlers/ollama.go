@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,11 +14,13 @@ func handleOllamaMessage(ctx context.Context, s *discordgo.Session, m *discordgo
 	userPrompt := strings.Join(args, " ")
 	systemPrompt, err := prompt.System()
 	if err != nil {
+		log.Printf("load Ollama system prompt: %v", err)
 		return
 	}
 
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
+		log.Printf("create Ollama client: %v", err)
 		return
 	}
 
@@ -43,6 +46,7 @@ func handleOllamaMessage(ctx context.Context, s *discordgo.Session, m *discordgo
 		return nil
 	})
 	if err != nil {
+		log.Printf("Ollama chat: %v", err)
 		return
 	}
 

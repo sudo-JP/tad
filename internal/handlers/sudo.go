@@ -127,13 +127,14 @@ func runSudo(ctx context.Context, m *discordgo.MessageCreate, database *db.TadDa
 func runSudoNew(ctx context.Context, database *db.TadDatabase, kind string, args []string) (string, error) {
 	switch kind {
 	case "media":
-		if len(args) != 2 {
+		if len(args) < 2 {
 			return "", errUsage
 		}
 		if err := checkCommandName(args[0]); err != nil {
 			return "", err
 		}
-		return "added media command `" + args[0] + "`", database.CreateMediaCommand(ctx, args[0], args[1])
+		media := strings.Join(args[2:], " ")
+		return "added media command `" + args[0] + "`", database.CreateMediaCommand(ctx, args[0], media)
 
 	case "spam":
 		if len(args) < 3 {
